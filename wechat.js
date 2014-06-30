@@ -56,15 +56,17 @@ wechat.on('voice', function(session) {
 });
 
 var localStorage = {
-  voteReq: {}
+  voteRequest: {}, // use to calculate timeout request
+  voteRecord: {}, // use to record each user's choice
+  voteResult: {} // use to record each option vote count
 };
 wechat.on('event.CLICK', function(session) {
   var replyText;
   switch (session.incomingMessage['EventKey']) {
     case 'VOTE_BTN':
       var user = session.incomingMessage['FromUserName'];
-      var milliseconds = Number(session.incomingMessage['CreateTime']);
-      localStorage.voteReq[user] = milliseconds;
+      var seconds = Number(session.incomingMessage['CreateTime']);
+      localStorage.voteRequest[user] = seconds;
 
       var voteJson = require('./vote.json');
       if (voteJson) {
@@ -86,13 +88,13 @@ wechat.on('event.CLICK', function(session) {
 
 function handleVote(session) {
   var user = session.incomingMessage['FromUserName'];
-  if (!!!localStorage.voteReq[user]) {
+  if (!!!localStorage.voteRequest[user]) {
     return false;
   }
-  var time = localStorage.voteReq[user];
-  var milliseconds = Number(session.incomingMessage['CreateTime']);
-  if ((milliseconds - time) > (60 * 1000)) {
-    localStorage.voteReq[user] = undefined;
+  var time = localStorage.voteRequest[user];
+  var seconds = Number(session.incomingMessage['CreateTime']);
+  if ((seconds - time) > 60) {
+    localStorage.voteRequest[user] = undefined;
     session.replyTextMessage('对不起，您的投票已超时。');
     return true;
   }
@@ -101,23 +103,33 @@ function handleVote(session) {
     var vote = parseInt(content);
     var voteJson = require('./vote.json');
     if (!!!voteJson) {
-      localStorage.voteReq[user] = undefined;
+      localStorage.voteRequest[user] = undefined;
       session.replyTextMessage('No vote data founded.');
       return true;
     }
     var max = voteJson.options.length;
     if (vote < 1 || vote > max) {
-      localStorage.voteReq[user] = milliseconds;
+      localStorage.voteRequest[user] = seconds;
       session.replyTextMessage('请输入合法数字： 1 ~ ' + max);
       return true;
     } else {
-      localStorage.voteReq[user] = undefined;
+      localStorage.voteRequest[user] = undefined;
+      var alreadyVoted = localStorage.voteRecord[user] != undefined;
+      localStorage.voteRecord[user] = vote;
+      if (!alreadyVoted) {
+        var count = localStorage.voteResult[vote];
+        if (count == undefined) {
+          localStorage.voteResult[vote] = 1;
+        } else {
+          count++;
+          localStorage.voteResult[vote] = count;
+        }
+      }
       session.replyTextMessage('投票成功，谢谢参与！');
-      // TODO record vote status, avoid duplicated
       return true;
     }
   } else {
-    localStorage.voteReq[user] = milliseconds;
+    localStorage.voteRequest[user] = seconds;
     session.replyTextMessage('请输入数字完成投票。');
     return true;
   }
