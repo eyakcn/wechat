@@ -51,7 +51,8 @@ wechat.on('voice', function(session) {
     Title: 'Let it go',
     MsgType: 'music',
     Description: 'Listen to this music and guess ths singer',
-    MusicUrl: 'http://a.tumblr.com/tumblr_mx24nfZOXQ1t19zt0o1.mp3'
+    MusicUrl: 'http://a.tumblr.com/tumblr_mx24nfZOXQ1t19zt0o1.mp3',
+    HQMusicUrl: 'http://a.tumblr.com/tumblr_mx24nfZOXQ1t19zt0o1.mp3'
   });
 });
 
@@ -70,12 +71,28 @@ wechat.on('event.CLICK', function(session) {
 
       var voteJson = require('./vote.json');
       if (voteJson) {
+        var deadline = new Date(voteJson.deadline);
+        var yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        yesterday.setHours(0, 0, 0, 0);
+        if (deadline.getTime() <= yesterday.getTime()) {
+          var lines = '本次投票已于' + voteJson.deadline + '结束。\n';
+          if (!!localStorage.voteRecord[user]) {
+            lines += '您的投票： ' + localStorage.voteRecord[user] + '\n';
+          }
+          session.replyTextMessage(lines);
+          return true;
+        }
         var text = voteJson.title + '\n';
+        text += '(截止日期： ' + voteJson.deadline + ')\n\n';
         for (var i = 0; i < voteJson.options.length; i++) {
           var option = voteJson.options[i];
           text += '\t' + (i + 1) + ') ' + option + '\n';
         }
-        text += '请回复数字，时效1分钟。'
+        text += '请回复数字，时效1分钟。\n\n';
+        if (!!localStorage.voteRecord[user]) {
+          text += '您上次投票为： ' + localStorage.voteRecord[user] + '\n';
+        }
         session.replyTextMessage(text);
       } else {
         session.replyTextMessage('No vote data founded.');
