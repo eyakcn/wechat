@@ -5,16 +5,45 @@ var testCert = {
 var testButton = {
   "button": [{
     "type": "view",
-    "name": "Search",
-    "url": "http://www.soso.com/"
+    "name": "Vote",
+    "url": "http://126.73.253.17/vote.html"
+  }]
+};
+// var huaButton = '{\n' +
+//   '  "button": [{\n' +
+//   '    "name": "' + encodeURIComponent("查询") + '",\n' +
+//   '    "sub_button": [{\n' +
+//   '      "type": "view",\n' +
+//   '      "name": "' + encodeURIComponent("教学管理") + '",\n' +
+//   '      "url": "http://222.72.92.106/eams/index.do?isShowLogin=true"\n' +
+//   '    }, {\n' +
+//   '      "type": "view",\n' +
+//   '      "name": "' + encodeURIComponent("图书馆") + '",\n' +
+//   '      "url": "http://www.tsg.ecupl.edu.cn/"\n' +
+//   '    }]\n' +
+//   '  }]\n' +
+//   '}';
+
+var huaButton = {
+  "button": [{
+    "name": "查询",
+    "sub_button": [{
+      "type": "view",
+      "name": "教学管理",
+      "url": "http://222.72.92.106/eams/index.do?isShowLogin=true"
+    }, {
+      "type": "view",
+      "name": "图书馆",
+      "url": "http://www.tsg.ecupl.edu.cn/"
+    }]
   }, {
-    "type": "view",
-    "name": "Video",
-    "url": "http://v.qq.com/"
+    "type": "click",
+    "name": "投票",
+    "key": "VOTE_BTN"
   }]
 };
 
-weixin(testCert, testButton);
+weixin(testCert, huaButton);
 
 function weixin(cert, button) {
   var https = require("https"),
@@ -44,6 +73,16 @@ function weixin(cert, button) {
     // Build the post string from an object
     var buttonDef = JSON.stringify(button);
 
+    var escapedStr = encodeURI(buttonDef);
+    if (escapedStr.indexOf("%") != -1) {
+      var count = escapedStr.split("%").length - 1;
+      if (count == 0) count++;
+      var tmp = escapedStr.length - (count * 3);
+      count = count + tmp;
+    } else {
+      count = escapedStr.length;
+    }
+
     // An object of options to indicate where to post to
     var options = {
       host: 'api.weixin.qq.com',
@@ -52,7 +91,7 @@ function weixin(cert, button) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Content-Length': buttonDef.length
+        'Content-Length': count
       }
     };
 
