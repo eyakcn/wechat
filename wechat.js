@@ -57,10 +57,11 @@ wechat.on('voice', function(session) {
 });
 
 var localStorage = {
-  voteRequest: {}, // use to calculate timeout request
-  voteRecord: {}, // use to record each user's choice
-  voteResult: {} // use to record each option vote count
+  voteRequest: {} // use to calculate timeout request
 };
+localStorage.voteRecord = fs.existsSync('./voteRecord.json') ? require('./voteRecord.json') : {}; // use to record each user's choice
+localStorage.voteResult = fs.existsSync('./voteResult.json') ? require('./voteResult.json') : {}; // use to record each option vote count
+
 wechat.on('event.CLICK', function(session) {
   var replyText;
   switch (session.incomingMessage['EventKey']) {
@@ -131,17 +132,28 @@ function handleVote(session) {
       return true;
     } else {
       localStorage.voteRequest[user] = undefined;
-      var alreadyVoted = localStorage.voteRecord[user] != undefined;
+      var previousVote = localStorage.voteRecord[user];
       localStorage.voteRecord[user] = vote;
-      if (!alreadyVoted) {
-        var count = localStorage.voteResult[vote];
-        if (count == undefined) {
-          localStorage.voteResult[vote] = 1;
-        } else {
-          count++;
-          localStorage.voteResult[vote] = count;
+      fs.writeFile('./voteRecord.json', JSON.stringify(localStorage.voteRecord, null, 2), function(err) {
+        if (err) {
+          console.log(err);
         }
+      });
+      if (previousVote != undefined) {
+        localStorage.voteResult[previousVote] -= 1;
       }
+      var count = localStorage.voteResult[vote];
+      if (count == undefined) {
+        localStorage.voteResult[vote] = 1;
+      } else {
+        count++;
+        localStorage.voteResult[vote] = count;
+      }
+      fs.writeFile('./voteResult.json', JSON.stringify(localStorage.voteResult, null, 2), function(err) {
+        if (err) {
+          console.log(err);
+        }
+      });
       session.replyTextMessage('投票成功，谢谢参与！');
       return true;
     }
