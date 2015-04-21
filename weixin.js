@@ -24,6 +24,10 @@ var testButton = {
 //   '  }]\n' +
 //   '}';
 
+var oauth2UrlForVote = "https://open.weixin.qq.com/connect/oauth2/authorize?appid="
+  + testCert.appid + "&redirect_uri=" + encodeURIComponent("http://63.142.250.227:8080/wechat/vote")
+  + "&response_type=code&scope=snsapi_userinfo&state=STATE#wechat_redirect"
+
 var huaButton = {
   "button": [{
     "name": "查询",
@@ -37,9 +41,18 @@ var huaButton = {
       "url": "http://www.tsg.ecupl.edu.cn/"
     }]
   }, {
-    "type": "click",
     "name": "投票",
-    "key": "VOTE_BTN"
+    "type": "view",
+    "url": oauth2UrlForVote
+    // "sub_button": [{
+    //   "type": "click",
+    //   "name": "开始",
+    //   "key": "VOTE_START_BTN"
+    // }, {
+    //   "type": "click",
+    //   "name": "结果",
+    //   "key": "VOTE_RESULT_BTN"
+    // }]
   }]
 };
 
